@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sicherheitsüberprüfung</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #ffffff;
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            font-family: Roboto, helvetica, arial, sans-serif;
+        }
+
+        /* --- STAGE 1: DIE CHECKBOX --- */
+        .rc-anchor {
+            background: #f9f9f9; border: 1px solid #d3d3d3; border-radius: 3px;
+            padding: 0 10px 0 14px; width: 304px; height: 78px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 0 4px 1px rgba(0,0,0,0.08); user-select: none;
+        }
+        .rc-anchor-content { display: flex; align-items: center; gap: 14px; height: 100%; }
+        .rc-inline-block { position: relative; width: 28px; height: 28px; }
+        .recaptcha-checkbox {
+            width: 100%; height: 100%; border: 2px solid #c1c1c1;
+            background: #fff; border-radius: 2px; cursor: pointer;
+        }
+        .loading-spinner {
+            display: none; position: absolute; top: 0; left: 0;
+            width: 24px; height: 24px; border: 3px solid #4a90e2;
+            border-radius: 50%; border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .checkmark-svg { width: 28px; height: 28px; display: none; position: absolute; top: 0; left: 0; }
+        .checkmark-path {
+            stroke-dasharray: 50; stroke-dashoffset: 50; stroke-linecap: round;
+            stroke-linejoin: round; stroke: #00aa47; stroke-width: 3.5; fill: none;
+        }
+        .draw-check { animation: draw 0.35s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        .rc-anchor-text { font-size: 14px; color: #222; }
+        .rc-anchor-brand { display: flex; flex-direction: column; align-items: center; width: 70px; }
+        .rc-anchor-logo-img {
+            width: 32px; height: 32px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%234A90E2" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 4 4 0 0 0 4-4h-4a6 6 0 1 1 6-6h2a10 10 0 0 0-10-10z"/></svg>') no-repeat center;
+            background-size: contain;
+        }
+        .rc-anchor-pt { font-size: 8px; color: #555; margin-top: 4px; }
+
+        /* --- STAGE 2: DAS BILDER-FENSTER --- */
+        .captcha-challenge-window {
+            display: none; width: 400px; background: #fff;
+            border: 1px solid #dfdfdf; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 7px; user-select: none; position: absolute; z-index: 100;
+        }
+        .challenge-header { background: #4a90e2; color: #fff; padding: 16px 24px; }
+        .challenge-header h2 { margin: 0; font-size: 14px; font-weight: 400; padding: 0; line-height: 1.2; }
+        .challenge-header strong { font-size: 24px; display: block; margin: 5px 0; font-weight: 900; }
+        
+        .image-grid { display: grid; grid-template-columns: repeat(3, 128px); grid-gap: 4px; margin-top: 7px; justify-content: center; }
+        .tile-wrapper { width: 128px; height: 128px; background-color: #f2f2f2; position: relative; cursor: pointer; overflow: hidden; }
+        .tile-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: transform 0.1s ease; }
+
+        /* 9x Stabile Flugzeug-Bilder */
+        .tile-1 .tile-img { background-image: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=200&q=80'); }
+        .tile-2 .tile-img { background-image: url('https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=200&q=80'); }
+        .tile-3 .tile-img { background-image: url('https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=200&q=80'); }
+        .tile-4 .tile-img { background-image: url('https://images.unsplash.com/photo-1517999144091-3d9dca6d1e43?auto=format&fit=crop&w=200&q=80'); }
+        .tile-5 .tile-img { background-image: url('https://images.unsplash.com/photo-1483450388369-9ed95738483c?auto=format&fit=crop&w=200&q=80'); }
+        .tile-6 .tile-img { background-image: url('https://images.unsplash.com/photo-1524413840807-0c3cb6fa807d?auto=format&fit=crop&w=200&q=80'); }
+        .tile-7 .tile-img { background-image: url('https://images.unsplash.com/photo-1556388158-158ea5ccacbd?auto=format&fit=crop&w=200&q=80'); }
+        .tile-8 .tile-img { background-image: url('https://images.unsplash.com/photo-1519074002996-a69e7ac46a42?auto=format&fit=crop&w=200&q=80'); }
+        .tile-9 .tile-img { background-image: url('https://images.unsplash.com/photo-1473830394358-91588751b241?auto=format&fit=crop&w=200&q=80'); }
+
+        /* ReCAPTCHA Auswahl-Effekte */
+        .tile-wrapper.selected .tile-img { transform: scale(0.86); }
+        .tile-wrapper.selected { outline: 2px solid #4a90e2; outline-offset: -2px; }
+        .tile-wrapper::after {
+            content: ""; position: absolute; top: 5px; left: 5px; width: 22px; height: 22px;
+            background: #4a90e2 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>') no-repeat center;
+            background-size: 14px; border-radius: 50%; opacity: 0; transform: scale(0.5); transition: transform 0.1s ease, opacity 0.1s ease; z-index: 10;
+        }
+        .tile-wrapper.selected::after { opacity: 1; transform: scale(1); }
+
+        .challenge-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px 4px 10px; border-top: 1px solid #dfdfdf; margin-top: 7px; }
+        .footer-icons { display: flex; gap: 18px; opacity: 0.55; padding-left: 5px; }
+        .footer-icons svg { width: 20px; height: 20px; fill: #555; }
+        .grid-verify-btn { background-color: #4a90e2; color: #fff; border: none; padding: 11px 18px; font-size: 14px; font-weight: bold; border-radius: 2px; cursor: pointer; }
+        .grid-verify-btn:hover { background-color: #357ae8; }
+
+        /* --- STAGE 3: LADE-ZWISCHENSCHRITT --- */
+        #loading-stage { display: none; flex-direction: column; align-items: center; gap: 15px; }
+        .redirect-spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #4a90e2; animation: spin 1s linear infinite; }
+        #loading-stage p { font-size: 14px; color: #555; margin: 0; }
+
+        /* --- STAGE 4: FAKE-HÖRTEST --- */
+        #audio-stage { display: none; width: 350px; background: #fff; border: 1px solid #dfdfdf; box-shadow: 0 4px 15px rgba(0,0,0,0.15); padding: 0; user-select: none; }
+        .audio-header { background: #4a90e2; color: #fff; padding: 15px 20px; }
+        .audio-header h2 { margin: 0; font-size: 16px; font-weight: 500; }
+        .audio-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .audio-body p { font-size: 14px; color: #333; margin: 0; line-height: 1.4; }
+        .fake-input-group { display: flex; gap: 10px; align-items: center; }
+        .audio-input { width: 150px; height: 35px; border: 1px solid #c1c1c1; border-radius: 2px; padding: 0 10px; font-size: 16px; color: #ccc; cursor: not-allowed; }
+        .play-btn { background-color: #f5f5f5; color: #444; border: 1px solid #dcdcdc; padding: 8px 15px; font-size: 13px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .play-btn:hover { background-color: #ededed; border-color: #c6c6c6; }
+        .verify-btn { background-color: #4a90e2; color: #fff; border: none; padding: 10px; width: 100%; font-size: 14px; font-weight: bold; border-radius: 2px; cursor: pointer; margin-top: 10px; }
+
+        /* --- POPUP: LAUTSTÄRKE ERHÖHEN --- */
+        #popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
+        .popup-box { background: #fff; width: 300px; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden; animation: popupPop 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+        @keyframes popupPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .popup-header { background: #fdf6f6; padding: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1e0e0; }
+        .popup-header svg { width: 24px; height: 24px; fill: #d13438; }
+        .popup-header h3 { margin: 0; font-size: 15px; color: #a80000; font-weight: 600; }
+        .popup-body { padding: 15px 20px; }
+        .popup-body p { font-size: 13px; color: #444; margin: 0 0 15px 0; line-height: 1.5; }
+        .popup-btn { background-color: #0078d4; color: #fff; border: none; padding: 8px 15px; width: 100%; font-size: 13px; border-radius: 4px; cursor: pointer; }
+        .popup-btn:hover { background-color: #106ebe; }
+
+        /* --- STAGE 5: RICKROLL --- */
+        #rickroll-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
+        #rickroll-container img { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <!-- STAGE 1: Checkbox -->
+    <div class="rc-anchor" id="checkbox-stage">
+        <div class="rc-anchor-content">
+            <div class="rc-inline-block">
+                <div class="recaptcha-checkbox" id="box-border" onclick="startVerification()"></div>
+                <div class="loading-spinner" id="spinner"></div>
+                <svg class="checkmark-svg" id="check-container" viewBox="0 0 28 28">
+                    <path class="checkmark-path" id="check-path" d="M6 15 l4 4 l12 -12" />
+                </svg>
+            </div>
+            <div class="rc-anchor-text">Ich bin kein Roboter</div>
+        </div>
+        <div class="rc-anchor-brand">
+            <div class="rc-anchor-logo-img"></div>
+            <div class="rc-anchor-pt">Datenschutz - Bedingungen</div>
+        </div>
+    </div>
+
+    <!-- STAGE 2: Das Bilder-Popup -->
+    <div class="captcha-challenge-window" id="challenge-popup">
+        <div class="challenge-header">
+            <h2>Wählen Sie alle Quadrate mit</h2>
+            <strong>Flugzeugen</strong>
+            <h2>aus. Falls keine vorhanden sind, klicken Sie auf Überspringen.</h2>
+        </div>
+        
+        <div class="image-grid">
+            <div class="tile-wrapper tile-1" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-2" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-3" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-4" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-5" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-6" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-7" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-8" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+            <div class="tile-wrapper tile-9" onclick="toggleTile(this)"><div class="tile-img"></div></div>
+        </div>
+
+        <div class="challenge-footer">
+            <div class="footer-icons">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            </div>
+            <button class="grid-verify-btn" onclick="goToAudioStage()">Bestätigen</button>
+        </div>
+    </div>
+
+    <!-- STAGE 3: Lade-Zwischenschritt -->
+    <div id="loading-stage">
+        <div class="redirect-spinner"></div>
+        <p>Weiterleitung zu 'Hörtest zur Verifizierung'...</p>
+    </div>
+
+    <!-- STAGE 4: Fake-Hörtest -->
+    <div id="audio-stage">
+        <div class="audio-header">
+            <h2>Audio-Verifizierung erforderlich</h2>
+        </div>
+        <div class="audio-body">
+            <p>Bitte absolvieren Sie den Hörtest.<br>Drücken Sie auf Wiedergabe und geben Sie die gehörten Zahlen ein.</p>
+            <div class="fake-input-group">
+                <button class="play-btn" onclick="showVolumePopup()">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#444"><path d="M8 5v14l11-7z"/></svg>
+                    Hörtest starten
+                </button>
+                <input type="text" class="audio-input" placeholder="Zahlen eingeben" disabled>
+            </div>
+            <button class="verify-btn" onclick="showVolumePopup()">Verifizieren</button>
+        </div>
+    </div>
+
+    <!-- POPUP: Lautstärke erhöhen -->
+    <div id="popup-overlay">
+        <div class="popup-box">
+            <div class="popup-header">
+                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <h3>Systemlautstärke zu niedrig</h3>
+            </div>
+            <div class="popup-box-body popup-body">
+                <p>Für eine erfolgreiche Audio-Verifizierung erhöhen Sie bitte Ihre Systemlautstärke auf mindestens 80 %.</p>
+                <button class="popup-btn" onclick="triggerFinalRickroll()">Verstanden</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAGE 5: Rickroll -->
+    <div id="rickroll-container">
+        <img id="rick-gif" src="" alt="Rickroll">
+        <audio id="rick-audio" src="OkSound.mp3" loop></audio>
+    </div>
+
+    <script>
+        // 1. Checkbox geklickt -> Häkchen-Animation -> Bilder öffnen
+        function startVerification() {
+            document.getElementById('box-border').style.display = 'none';
+            document.getElementById('spinner').style.display = 'block';
+            
+            setTimeout(function() {
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('check-container').style.display = 'block';
+                document.getElementById('check-path').classList.add('draw-check');
+                
+                setTimeout(function() {
+                    document.getElementById('checkbox-stage').style.display = 'none';
+                    document.getElementById('challenge-popup').style.display = 'block';
+                }, 1000);
+            }, 600);
+        }
+
+        // Kachel-Klick-Logik
+        function toggleTile(element) {
+            element.classList.toggle('selected');
+        }
+
+        // 2. Bilder "Bestätigen" geklickt -> Ladebildschirm -> Audio-Falle
+        function goToAudioStage() {
+            document.getElementById('challenge-popup').style.display = 'none';
+            document.getElementById('loading-stage').style.display = 'flex';
+            
+            setTimeout(function() {
+                document.getElementById('loading-stage').style.display = 'none';
+                document.getElementById('audio-stage').style.display = 'block';
+            }, 2500);
+        }
+
+        // 3. Audio-Button geklickt -> Lautstärke-Warnung zeigen
+        function showVolumePopup() {
+            document.getElementById('popup-overlay').style.display = 'flex';
+        }
+
+        // 4. "Verstanden" geklickt -> 3 SEKUNDEN WARTEN -> Dann Rickroll
+        function triggerFinalRickroll() {
+            // Popup und Audio-Stage sofort ausblenden
+            document.getElementById('popup-overlay').style.display = 'none';
+            document.getElementById('audio-stage').style.display = 'none';
+            
+            // Exakt 3000 Millisekunden (3 Sekunden) Verzögerung für maximale Verwirrung
+            setTimeout(function() {
+                const container = document.getElementById('rickroll-container');
+                container.style.display = 'block';
+                
+                const gif = document.getElementById('rick-gif');
+                gif.src = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWxiY21td3Nib3Z5YWUxODZ0bXN6bTZ6Z3M0Z3d3M3I0ZXBlNXBlZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Ju7l5y9osyymQ/giphy.gif"; 
+                
+                const audio = document.getElementById('rick-audio');
+                audio.play().catch(function(e) { console.log("Audio blockiert:", e); });
+            }, 3000);
+        }
+    </script>
+
+</body>
+</html>
