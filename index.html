@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sicherheitsüberprüfung</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: Roboto, helvetica, arial, sans-serif;
+        }
+
+        /* Das originale Google reCAPTCHA Widget */
+        .rc-anchor {
+            background: #f9f9f9;
+            border: 1px solid #d3d3d3;
+            color: #000;
+            border-radius: 3px;
+            padding: 0 10px 0 14px;
+            width: 304px;
+            height: 78px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 0 4px 1px rgba(0,0,0,0.08);
+            user-select: none;
+        }
+
+        .rc-anchor-content {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            height: 100%;
+        }
+
+        /* Die Fake-Checkbox */
+        .rc-inline-block {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+        }
+
+        .recaptcha-checkbox {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #c1c1c1;
+            background: #fff;
+            border-radius: 2px;
+            transition: border-color 0.1s ease;
+        }
+
+        .recaptcha-checkbox:hover {
+            border-color: #b2b2b2;
+        }
+
+        /* Der drehende Ladekreis (wird per JS aktiviert) */
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #4a90e2;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Das originale grüne Häkchen (animiert) */
+        .checkmark {
+            display: none;
+            position: absolute;
+            top: 4px; left: 9px;
+            width: 7px;
+            height: 14px;
+            border: solid #00aa47;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+
+        .rc-anchor-text {
+            font-size: 14px;
+            font-weight: 400;
+            color: #222;
+        }
+
+        /* Die Google-Brand-Ecke rechts */
+        .rc-anchor-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 100%;
+            text-align: center;
+            padding-right: 2px;
+        }
+
+        .rc-anchor-logo-img {
+            width: 32px;
+            height: 32px;
+            /* Das originale reCAPTCHA Symbol als SVG */
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%234A90E2" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 4 4 0 0 0 4-4h-4a6 6 0 1 1 6-6h2a10 10 0 0 0-10-10z"/></svg>') no-repeat center;
+            background-size: contain;
+        }
+
+        .rc-anchor-pt {
+            font-size: 8px;
+            color: #555;
+            text-decoration: none;
+            margin-top: 4px;
+        }
+
+        .rc-anchor-pt:hover {
+            text-decoration: underline;
+        }
+
+        /* Vollbild Rickroll */
+        #rickroll-container {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            z-index: 9999;
+        }
+
+        #rickroll-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="rc-anchor" id="main-card">
+        <div class="rc-anchor-content">
+            <div class="rc-inline-block" onclick="verifyCaptcha()">
+                <div class="recaptcha-checkbox" id="box-border"></div>
+                <div class="loading-spinner" id="spinner"></div>
+                <div class="checkmark" id="check"></div>
+            </div>
+            <div class="rc-anchor-text">Ich bin kein Roboter</div>
+        </div>
+        <div class="rc-anchor-brand">
+            <div class="rc-anchor-logo-img"></div>
+            <div class="rc-anchor-pt">Datenschutz - Nutzungsbedingungen</div>
+        </div>
+    </div>
+
+    <div id="rickroll-container">
+        <img id="rick-gif" src="" alt="Rickroll">
+        <audio id="rick-audio" src="Rick.mp3" loop></audio>
+    </div>
+
+    <script>
+        function verifyCaptcha() {
+            const border = document.getElementById('box-border');
+            const spinner = document.getElementById('spinner');
+            const check = document.getElementById('check');
+            
+            // 1. Grauen Rahmen verstecken, Ladekreis anzeigen
+            border.style.display = 'none';
+            spinner.style.display = 'block';
+            
+            // 2. Nach 1.2 Sekunden (Ladezeit simuliert): Häkchen anzeigen
+            setTimeout(function() {
+                spinner.style.display = 'none';
+                check.style.display = 'block';
+                
+                // 3. Nach weiteren 0.6 Sekunden (Erfolgsmeldung realisieren) -> BÄM! Rickroll!
+                setTimeout(function() {
+                    document.getElementById('main-card').style.display = 'none';
+                    
+                    const container = document.getElementById('rickroll-container');
+                    container.style.display = 'block';
+                    
+                    const gif = document.getElementById('rick-gif');
+                    gif.src = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWxiY21td3Nib3Z5YWUxODZ0bXN6bTZ6Z3M0Z3d3M3I0ZXBlNXBlZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Ju7l5y9osyymQ/giphy.gif"; 
+                    
+                    const audio = document.getElementById('rick-audio');
+                    audio.play().catch(function(error) {
+                        console.log("Audio-Fehler:", error);
+                    });
+                }, 600);
+
+            }, 1200); 
+        }
+    </script>
+
+</body>
+</html>
