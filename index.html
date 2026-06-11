@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sicherheitsüberprüfung</title>
+    
+    <!-- FAVICON ERGÄNZUNG -->
+    <link rel="icon" type="image/jpeg" href="ProfessorFilouLOGO.jpg">
+    
     <style>
         * { box-sizing: border-box; }
         body {
@@ -71,7 +75,7 @@
         .tile-3 .tile-img { background-image: url('https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=200&q=80'); }
         .tile-4 .tile-img { background-image: url('https://images.unsplash.com/photo-1517999144091-3d9dca6d1e43?auto=format&fit=crop&w=200&q=80'); }
         .tile-5 .tile-img { background-image: url('https://images.unsplash.com/photo-1483450388369-9ed95738483c?auto=format&fit=crop&w=200&q=80'); }
-        .tile-6 .tile-img { background-image: url('https://images.unsplash.com/photo-1524413840807-0c3cb6fa807d?auto=format&fit=crop&w=200&q=80'); }
+        .tile-6 .tile-img { background-image: url('https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?auto=format&fit=crop&w=200&q=80'); }
         .tile-7 .tile-img { background-image: url('https://images.unsplash.com/photo-1556388158-158ea5ccacbd?auto=format&fit=crop&w=200&q=80'); }
         .tile-8 .tile-img { background-image: url('https://images.unsplash.com/photo-1519074002996-a69e7ac46a42?auto=format&fit=crop&w=200&q=80'); }
         .tile-9 .tile-img { background-image: url('https://images.unsplash.com/photo-1473830394358-91588751b241?auto=format&fit=crop&w=200&q=80'); }
@@ -261,11 +265,9 @@
 
         // 4. "Verstanden" geklickt -> 3 SEKUNDEN WARTEN -> Dann Rickroll
         function triggerFinalRickroll() {
-            // Popup und Audio-Stage sofort ausblenden
             document.getElementById('popup-overlay').style.display = 'none';
             document.getElementById('audio-stage').style.display = 'none';
             
-            // Exakt 3000 Millisekunden (3 Sekunden) Verzögerung für maximale Verwirrung
             setTimeout(function() {
                 const container = document.getElementById('rickroll-container');
                 container.style.display = 'block';
